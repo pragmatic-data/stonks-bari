@@ -16,7 +16,7 @@ model-paths: ["models"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
 seed-paths: ["seeds"]
-macro-paths: ["macros"]
+macro-paths: ["macros", "project_setup", "migrations", "ingestion"]
 snapshot-paths: ["snapshots"]
 
 target-path: "target"  # directory which will store compiled SQL files
@@ -24,17 +24,57 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
+vars:
+  project_short_name: STONKS_BARI
+  # project_short_name  - The name used to create the project resources, not the dbt unique project name as in 
+  #                     - the first line of this file, available as "project_name" context variable
+
+  environments: ['DEV', 'QA', 'PROD']
+  # environments        - The list of environment names in use in this project
+
+### SF Admin VARIABLES - These override the default ones set in the package
+  useradmin_role: USERADMIN       
+  # useradmin_role - the role used to create roles and users - needs privilege to create the object
+
+  future_grants_role: SECURITYADMIN
+  # future_grants_role - the role used to grant future usage and select for RO functional roles
+  #                    - these future grants are not granted if no future_grants_role is defined
+
+  creator_role: SYSADMIN          
+  # creator_role - the role used to create databases and warehouses - needs privilege to create the object  
+
+  owner_role: STONKS_SYSADMIN
+  # owner_role - the role who will get ownership of the created objects for the project and parent of the project roles
+  #            - by providing your own role for a project or project group you define a project scoped SYSADMIN
+  #            - that can granted to people in the DEV team, even if the full SYSADMIN cannot be granted,
+  #            - and can also be used for other administration tasks.
+  
+  single_WH: True
+  # single_WH - Wheter to create and use a single WH for all environments, if true, or one for each environment, if false.
+  #           - Warehouse naming is controlled by the get_warehouse_name(...) macro where single_WH is a parameter to control 
+  #           - the name generation.
+
+  dev_env_names: ['DEV']
+  # dev_env_names - a list of environment to be considered at "DEVELOPMENT" level, where DEVELOPER role have read/write privileges
+  #                 In "NON DEVELOPMENT" environments the DEVELOPER role has only read privileges
+
+  initial_pw: "{{ env_var('DBT_ENV_SECRET_INITIAL_PW', 'Ch4ng3.ME') }}"
+  # initial_pw - The initial password to assign to users when created. 
+  #            - While it MUST be changed after the user creation, it better come from ENV vars and not the string here.
+
+  # shared_dev_wh: COMPUTE_WH
+  # shared_dev_wh - the shared development warehouse to assign to developers in addition to the project warehouse
+  #                 The idea is that it is more cost efficient for many developers to share a single DEV WH
+  #                 than each DEV using the specific WH for the project she's working on at the moment.
+
+  # reporting_wh: REPORTING_WH
+  # reporting_wh - an example of extra warehouse
+  
+  ## Variables to re-define the VALID_TO value and type for current rows
+  # pdp.end_of_time: 9999-12-31   # PDP default is 9999-09-09
+  # pdp.end_of_time_type: DATE    # could be timestamp
 
 # Configuring models
-# Full documentation: https://docs.getdbt.com/docs/configuring-models
-
-# In dbt, the default materialization for a model is a view. This means, when you run 
-# dbt run or dbt build, all of your models will be built as a view in your data platform. 
-# The configuration below will override this setting for models in the example folder to 
-# instead be materialized as tables. Any models you add to the root of the models folder will 
-# continue to be built as views. These settings can be overridden in the individual model files
-# using the `{{ config(...) }}` macro.
-
 models:
   my_new_project:
     # Applies to all files under models/example/

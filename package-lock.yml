@@ -1,0 +1,11 @@
+packages:
+  - name: dbt_utils
+    package: dbt-labs/dbt_utils
+    version: 1.3.0
+  - git: https://github.com/pragmatic-data/sf-admin.git
+    name: sf_project_admin
+    revision: be6924c7ce9d49c8f3d1a206745a215a2a711398
+  - git: https://github.com/pragmatic-data/pragmatic-data-platform.git
+    name: pragmatic_data
+    revision: 679ba4885446fefd4fac9d668df9a7830c3f0439
+sha1_hash: 40d8567b5a829fdf6d927b511d36f27d9cc330db
