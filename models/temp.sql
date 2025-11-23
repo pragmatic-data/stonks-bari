@@ -1,0 +1,1 @@
+{{ get_IB_ingestion_setup_sql() }}
