@@ -24,7 +24,7 @@ PUT 'file:///Users/robertozagni/RobMcZag/stonks-bari_IB_files/transfers/Transfer
     OVERWRITE = FALSE
 ;
 
-/* QA 
+/* QA */
 PUT 'file:///Users/robertozagni/RobMcZag/stonks-bari_IB_files/open_positions/*OpenPositions*.csv'
     @STONKS_BARI_QA.LAND_IB.IB_CSV__STAGE/open_positions/
     AUTO_COMPRESS = TRUE
@@ -45,9 +45,8 @@ PUT 'file:///Users/robertozagni/RobMcZag/stonks-bari_IB_files/transfers/Transfer
     AUTO_COMPRESS = TRUE
     OVERWRITE = FALSE
 ;
-*/
 
-/* PROD 
+/* PROD */
 PUT 'file:///Users/robertozagni/RobMcZag/stonks-bari_IB_files/open_positions/*OpenPositions*.csv'
     @STONKS_BARI_PROD.LAND_IB.IB_CSV__STAGE/open_positions/
     AUTO_COMPRESS = TRUE
@@ -68,4 +67,3 @@ PUT 'file:///Users/robertozagni/RobMcZag/stonks-bari_IB_files/transfers/Transfer
     AUTO_COMPRESS = TRUE
     OVERWRITE = FALSE
 ;
-*/
