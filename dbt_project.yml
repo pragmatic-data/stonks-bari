@@ -77,6 +77,39 @@ vars:
 # Configuring models
 models:
   stonks_bari:
-    # Applies to all files under models/example/
-    example:
+    +persist_docs:
+      relation: true
+      columns: true
+
+    example:    # Applies to all files under models/example/
       +materialized: table
+
+    01_storage:
+      interactive_brokers:
+        +materialized: view
+        +schema: ib_storage
+    02_refined:
+      interactive_brokers:
+        +materialized: view
+        +schema: ib_refined
+      master_data:
+        +materialized: table
+        +schema: md_refined
+    03_delivery:
+      marts:
+        portfolio_analysis:
+          +materialized: table
+          +schema: mart_portfolio_analysis
+      apps:
+        current_positions:
+          +materialized: table
+          +schema: app_current_positions
+
+seeds:
+  stonks_bari:
+    +schema: seeds
+    +post-hook:
+      - "ALTER TABLE {{ this }} ADD COLUMN IF NOT EXISTS ingestion_ts_utc timestamp"
+      - "UPDATE {{ this }} SET ingestion_ts_utc = '{{ run_started_at }}' WHERE ingestion_ts_utc is null"
+
+
