@@ -1,0 +1,105 @@
+version: 2
+models:
+
+  - name: REF_IB_POSITIONS_TRANSACTIONS
+    description: |
+      This model unifies all transactions that can alter a position's quantity or cost basis.
+      It serves as the event source for calculating historical positions.
+    columns:
+      - name: transaction_hkey
+        description: PK. A unique hash key for the transaction.
+      - name: quantity
+        description: The quantity of securities in the transaction. Positive for buys/ins, negative for sells/outs.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: "!= 0"
+              where: "transaction_type not in ('CORPACT', 'CORP_ACT')"
+      - name: cost_basis_fx_change
+        description: The change in the position's cost basis resulting from this transaction, in the trading currency.
+
+
+  - name: REFH_IB_POSITIONS_CALCULATED
+    description: |
+      Calculates the historical state of each position by applying all transactions from the beginning of time.
+      This event-sourcing approach provides a complete and auditable history of every position.
+    config:
+      position_hdiff_columns:   # Here we list all the payload columns in the model, for complete hash
+        - BROKER_CODE
+        - CLIENT_ACCOUNT_CODE
+        - LISTING_EXCHANGE
+        - SECURITY_CODE
+        - SECURITY_SYMBOL
+        - SECURITY_NAME
+        - ACCOUNT_ALIAS
+        - ASSET_CLASS
+        - EFFECTIVITY_DATE
+        - POSITION_QUANTITY_CHANGE
+        - CURRENCY_PRIMARY
+        - FX_RATE_TO_BASE
+
+        - TRANSACTION_ID
+        - TRANSACTION_TYPE
+        - TRANSACTION_TS
+        - TX_MONEY_FX
+        - TX_MONEY_BASE
+        - OPEN_CLOSE_INDICATOR
+        - NOTES_CODES
+        - BUY_SELL
+        - TX_ORDER_IN_POSITION
+        - TX_COUNT_IN_POSITION
+        - POSITION_QUANTITY
+        - SIDE
+        - COST_BASIS_FX
+        - COST_BASIS_BASE
+        - COST_BASIS_CHANGE_FX
+    data_tests:
+      - dbt_utils.expression_is_true: # Cost basis sign
+          expression: | 
+            CASE
+              WHEN TRANSACTION_TYPE = 'SPLIT' THEN COST_BASIS_CHANGE_FX = 0
+              WHEN SIDE = 'Long' and OPEN_CLOSE_INDICATOR = 'O' THEN COST_BASIS_CHANGE_FX >= 0
+              WHEN SIDE = 'Long' and OPEN_CLOSE_INDICATOR = 'C' THEN COST_BASIS_CHANGE_FX <= 0
+              WHEN SIDE = 'Short' and OPEN_CLOSE_INDICATOR = 'O' THEN COST_BASIS_CHANGE_FX <= 0
+              WHEN SIDE = 'Short' and OPEN_CLOSE_INDICATOR = 'C' THEN COST_BASIS_CHANGE_FX >= 0
+              ELSE COST_BASIS_CHANGE_FX = 0
+            END
+      - dbt_utils.expression_is_true: # Cost basis sign
+          expression: | 
+            CASE
+              WHEN SIDE = 'Long' THEN COST_BASIS_FX >= 0
+              WHEN SIDE = 'Short' THEN COST_BASIS_FX <= 0
+              ELSE COST_BASIS_FX = 0
+            END
+      - dbt_utils.expression_is_true: # open or increase position
+          expression: | 
+            CASE
+              WHEN (SIDE = 'Long' and POSITION_QUANTITY_CHANGE > 0) OR (SIDE = 'Short' and POSITION_QUANTITY_CHANGE < 0)  -- open or increase position
+              THEN OPEN_CLOSE_INDICATOR = 'O'
+            END
+      - dbt_utils.expression_is_true: # close or reduce position
+          expression: | 
+            CASE
+              WHEN (SIDE = 'Long' and POSITION_QUANTITY_CHANGE < 0) OR (SIDE = 'Short' and POSITION_QUANTITY_CHANGE > 0)  -- close or reduce position
+              THEN OPEN_CLOSE_INDICATOR = 'C'
+            END
+      - dbt_utils.expression_is_true: # closed position
+          expression: | 
+            CASE
+              WHEN SIDE = 'Closed'
+              THEN OPEN_CLOSE_INDICATOR = 'C'
+            END
+    columns:
+      - name: position_scd_hkey
+        description: Version PK. A unique key for this specific version of the position's history.
+      - name: position_hkey
+        description: Record PK. A unique key identifying the position (portfolio + security).
+      - name: effectivity_date
+        description: The timestamp when this version of the position became effective.
+      - name: quantity
+        description: The quantity of the security held in the position as of the effectivity_date.
+      - name: cost_basis_fx
+        description: The total cost basis of the position in the trading currency as of the effectivity_date.
+
+
+  - name: VER_IB_POSITIONS_CALCULATED
+    description: This model provides the current version of all calculated positions, serving as a snapshot of the latest state.
