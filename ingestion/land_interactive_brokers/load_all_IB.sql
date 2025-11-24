@@ -10,13 +10,13 @@
 {{ log('*   load_IB_OpenPositions *', true) }}
 {% do load_IB_OpenPositions() %}
 
+{{ log('*   load_IB_Trades *', true) }}
+{% do load_IB_Trades() %}
+
 {# Disabled for Bari workshop
 
 {{ log('*   load_IB_CashTransactions *', true) }}
 {% do load_IB_CashTransactions() %}
-
-{{ log('*   load_IB_Trades *', true) }}
-{% do load_IB_Trades() %}
 
 {{ log('*   load_IB_Transfers *', true) }}
 {% do load_IB_Transfers() %}
